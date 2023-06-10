@@ -1,13 +1,5 @@
 from gui.app import MainApp
-# from player.player import MusicPlayer
-import tkinter as tk
-
-
-
-def change_skin(self, path):
-    self.destroy()
-    self.Skinself = './skins/modern/'
-    self.__init__()
+from player.player import MusicPlayer
     
-app=MainApp(skin_path='./skins/classic/')
+app=MainApp(skin_path='./skins/classic/', player=MusicPlayer)
 app.mainloop()
