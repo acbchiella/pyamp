@@ -6,8 +6,11 @@ authors = ["acbchiella <acb.chiella@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7,<3.8"
 Pillow = "^9.5.0"
+sounddevice = "^0.4.6"
+pydub = "^0.25.1"
+scipy = "1.7.3"
 
 [tool.poetry.dev-dependencies]
 
