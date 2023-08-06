@@ -11,6 +11,7 @@ import numpy as np
 import time
 
 class MusicPlayer(MusicPlayer):
+    pass
     # def __init__(self, spectrum=None):
     #     self.player = pyaudio.PyAudio()
     #     self.CHUNK = 1024

@@ -8,10 +8,12 @@ from player.player_interface import MusicPlayer
 from tkinter import filedialog as fd
 from typing import Optional
 
+SKINS_DIR = './skins/*'
+
 class MainApp(tk.Tk):
     def __init__(
         self,
-        skin_path: str = './skins/classic/',
+        skin_path: str = './skins/classic',
         player: MusicPlayer = MusicPlayer,
         change_skin: Optional[callable] = None,
      ):
@@ -20,8 +22,8 @@ class MainApp(tk.Tk):
         # self.withdraw()
         # self.overrideredirect(True)
         self.player = player
+        
         self.play_list_window = tk.Toplevel(self)
-        # self.play_list_window.overrideredirect(True)
         self.play_list_window.wm_attributes('-type', 'splash')
         self.play_list_window.geometry('275x116+675+300')
         self.play_list_window.bind("<B1-Motion>", self.do_move_pl)
@@ -37,164 +39,330 @@ class MainApp(tk.Tk):
         
         self.window_components = {}
         
+        self.get_skins()
         self.load_skin_files()
         self.build_main_window()
     
+    def set_skin(self, skin):
+        self.Skinself = skin
+        self.refresh_skin()
+        # print(self.skins)
+        
     def build_main_window(self):
         
         self.w = tk.Canvas(self, width=275, height=116,highlightthickness=0)
-        self.bg = self.w.create_image(0,0,image=self.images['bg'],anchor="nw")
-        self.titlebar = self.w.create_image(0,0,image=self.images['titlebar'],disabledimage=self.getImage("TITLEBAR","disabled_titlebar",27,16,303,29),anchor="nw")
+        self.bg = self.w.create_image(0, 0, image=self.image_bg['image'],anchor="nw")
+        self.titlebar = self.w.create_image(0, 0, image=self.image_title_bar['image'], disabledimage=self.image_title_bar['disabledimage'], anchor="nw")
         self.w.pack()
         self.w.bind("<ButtonPress-1>", self.start_move)
         self.w.bind("<ButtonRelease-1>", self.stop_move)
         self.w.bind("<B1-Motion>", self.do_move)
         
-        colors = self.get_spectrum_colors()
-        coord = 24, 42, 102, 59
-        self.spectrum = Spectrum(self.w, coord, colors=colors)
+        self.spectrum = Spectrum(self.w, (24, 42, 102, 59), colors=self.spectrum_color)
         self.player = self.player(spectrum=self.spectrum )
         
         # window buttons
-        self.window_components['close_b'] = WButton(self, self.images['close_pressed'], self.images['close_released'], 264, 3, 8, 8, self.on_close)
-        self.window_components['minimize_b'] = WButton(self, self.images['minimize_pressed'], self.images['minimize_released'], 254, 3, 8, 8, lambda : print('teste'))
-        self.window_components['reduce_b'] = WButton(self, self.images['reduce_pressed'], self.images['reduce_released'], 244, 3, 8, 8, lambda : print('teste'))
-        self.window_components['menu_b'] = WButton(self, self.images['menu_pressed'], self.images['menu_released'], 6, 3, 8, 8, lambda : print('teste'))
-        self.window_components['eq_'] = WButton(self, self.images['eq_off_released'], self.images['eq_off_pressed'], 219, 58, 10, 21, lambda : print('teste'), True, self.images['eq_on_released'], self.images['eq_on_pressed'])
-        self.window_components['pl_'] = WButton(self, self.images['pl_off_released'], self.images['pl_off_pressed'], 241, 58, 10, 21, self._hide_or_show_play_list, True, self.images['pl_on_released'], self.images['pl_on_pressed'])
+        self.close = WButton(self, button_properties=self.property_close, command=self.on_close)
+        self.minimize = WButton(self, button_properties=self.property_minimize, command=lambda : print('teste'))
+        self.reduce = WButton(self, button_properties=self.property_reduce, command=lambda : print('teste'))
+        
+        # Menu
+        self.menu_items = tk.Menu(self, tearoff=0)
+        def set_skin(skin):
+            self.Skinself = skin
+            self.refresh_skin()
+        
+        def command(skin):
+            return lambda: set_skin(skin)
+        
+        for item in self.skins:
+            self.menu_items.add_command(label=item, command=command(self.skins[item]))
+
+        self.menu = WButton(self, button_properties=self.property_menu, menu=self.menu_items)
         
         # player buttons
-        self.prev = WButton(self, self.images['prev_released'], self.images['prev_pushed'], 16, 88, 18, 23, self.player._previous)
-        self.play = WButton(self, self.images['play_released'], self.images['play_pushed'], 39, 88, 18, 23, self.player._play)
-        self.pause = WButton(self, self.images['pause_released'], self.images['pause_pushed'], 62, 88, 18, 23, self.player._pause)
-        self.stop = WButton(self, self.images['stop_released'], self.images['stop_pushed'], 85, 88, 18, 23, self.player._stop)
-        self.next_ = WButton(self, self.images['next_released'], self.images['next_pushed'], 108, 88, 18, 22, self.player._next)
-        self.open_ = WButton(self, self.images['open_released'], self.images['open_pushed'], 135, 89, 15, 21, self.player._open)
-        self.repeat_ = WButton(self, self.images['repeat_off_released'], self.images['repeat_off_pressed'], 210, 89, 15, 27, lambda : print('teste'), True, self.images['repeat_on_released'], self.images['repeat_on_pressed'])
-        self.sufle_ = WButton(self, self.images['shufle_off_released'], self.images['shufle_off_pressed'], 165, 89, 15, 45, lambda : print('teste'), True, self.images['shufle_on_released'], self.images['shufle_on_pressed'])
+        self.prev = WButton(self, button_properties=self.property_prev, command=self.player._previous)
+        self.play = WButton(self, button_properties=self.property_play, command=self.player._play)
+        self.pause = WButton(self, button_properties=self.property_pause, command=self.player._pause)
+        self.stop = WButton(self, button_properties=self.property_stop, command=self.player._stop)
+        self.next = WButton(self, button_properties=self.property_next, command=self.player._next)
+        self.open = WButton(self, button_properties=self.property_open, command=self.player._open)
         
-        self.pos_bar = WSlider(self, self.images['elapsed'], self.images['elapsed_pushed'], [self.images['elapsed_bg1']], 15, 72, 10, 29, 10, 248, lambda : print('teste'))
-        self.vol_bar = WSlider(self, self.images['volume_released'], self.images['volume_pressed'], [self.images[f'volume_bg{i}'] for i in range(27)], 108, 58, 10, 14, 13, 67, lambda : print('teste'))
-        self.balance_bar = WSlider(self, self.images['balance_released'], self.images['balance_pressed'], [self.images[f'balance_bg{i}'] for i in range(27)], 178, 58, 10, 13, 13, 37, lambda : print('teste'))
-             
+        self.repeat = WButton(self, button_properties=self.property_repeat, is_toggle=True, command=lambda : print('teste'))
+        self.shufle = WButton(self, button_properties=self.property_shufle, is_toggle=True, command=lambda : print('teste'))
+        
+        self.eq = WButton(self, button_properties=self.property_eq, is_toggle=True, command=lambda : print('teste'))
+        self.pl = WButton(self, button_properties=self.property_pl, is_toggle=True, command=self._hide_or_show_play_list)
+        
+        self.pos_bar = WSlider(self, slider_properties=self.property_pos_bar, command=lambda : print('teste'))
+        self.vol_bar = WSlider(self, slider_properties=self.property_vol_bar, command=lambda : print('teste'))
+        self.balance_bar = WSlider(self, slider_properties=self.property_balance_bar, command=lambda : print('teste'))
+          
     def on_close(self):
         self.destroy()
     
     def get_spectrum_colors(self):
         a = self.txt_file['VISCOLOR'].read()
         a = [i.split('//')[0].split(',')[0:3] for i in a.split('\n')]
-
+        rgb_to_tkinter = lambda x: "#%02x%02x%02x" % x
         colors_rgb = []
         for i in a[2:18]:
             c = tuple([int(j) for j in i])
-            colors_rgb.append(self._from_rgb(c))
+            colors_rgb.append(rgb_to_tkinter(c))
         
         return colors_rgb
-    
-    def _from_rgb(cls, rgb):
-        """translates an rgb tuple of int to a tkinter friendly color code
-        """
-        return "#%02x%02x%02x" % rgb
     
     def async_spectrum(self):
         while True:
             self.spectrum.values = self.player.data
-           
-    def getImage(self, name,rename,cx,cy,cw,ch):
-        if not rename in self.images: 
-            self.images[rename] = ImageTk.PhotoImage(self.imgFile[name].crop((cx,cy,cw,ch)))
-        return self.images[rename]
 
     def load_skin_files(self):
+        
         self.txt_file = {
             file.split('/')[-1][:-4].upper(): open(file) for file in glob.glob(f"{self.Skinself}/*") 
             if file[-3:].upper() in ['TXT']
         }
         
-        self.images = {}
         self.imgFile = {
             image.split('/')[-1][:-4].upper(): Image.open(image) for image in glob.glob(f"{self.Skinself}/*") 
             if image[-3:].upper() in ['PNG', 'BMP']
         }
-        self.getImage("MAIN","bg",0,0,275,116)
-        self.getImage("TITLEBAR","titlebar",27,0,303,14)
         
-        self.getImage("CBUTTONS","prev_released",0,0,23,18)
-        self.getImage("CBUTTONS","prev_pushed",0,18,23,36)
-
-        self.getImage("CBUTTONS","play_released",23,0,46,18)
-        self.getImage("CBUTTONS","play_pushed",23,18,46,36)
-
-        self.getImage("CBUTTONS","pause_released",46,0,69,18)
-        self.getImage("CBUTTONS","pause_pushed",46,18,69,36)
-
-        self.getImage("CBUTTONS","stop_released",69,0,92,18)
-        self.getImage("CBUTTONS","stop_pushed",69,18,92,36)
-
-        self.getImage("CBUTTONS","next_released",92,0,114,18)
-        self.getImage("CBUTTONS","next_pushed",92,18,114,36)
-
-        self.getImage("CBUTTONS","open_released",114,0,135,15)
-        self.getImage("CBUTTONS","open_pushed",114,16,135,31)
-
-
-        self.getImage("POSBAR","elapsed",248,0,277,10)
-        self.getImage("POSBAR","elapsed_pushed",278,0,307,10)
-        self.getImage("POSBAR","elapsed_bg1",0,0,248,10)
-
-        self.getImage("VOLUME","volume_released",15, 422,82,432)
-        self.getImage("VOLUME","volume_pressed",0, 422,52,432)
-        for i in range(28):
-            if i == 0:
-                self.getImage("VOLUME",f"volume_bg{i}",0,i*10,67,432)
-            else:
-                self.getImage("VOLUME",f"volume_bg{i}",0,i*15,67,i*15 + 13)
-
-
-        self.getImage("BALANCE","balance_released",15, 422,28,432)
-        self.getImage("BALANCE","balance_pressed",0, 422,13,432)
-        for i in range(28):
-            if i == 0:
-                self.getImage("BALANCE",f"balance_bg{i}",9,i*10,46,432)
-            else:
-                self.getImage("BALANCE",f"balance_bg{i}",9,i*15,46,i*15 + 13)
-
-
-        self.getImage("SHUFREP","repeat_on_released",0,30,27,45)
-        self.getImage("SHUFREP","repeat_off_released",0,0,27,15)
-        self.getImage("SHUFREP","repeat_on_pressed",0,15,27,30)
-        self.getImage("SHUFREP","repeat_off_pressed",0,45,27,60)
-
-        self.getImage("SHUFREP","shufle_on_released",29,30,74,45)
-        self.getImage("SHUFREP","shufle_off_released",29,0,74,15)
-        self.getImage("SHUFREP","shufle_on_pressed",29,15,74,30)
-        self.getImage("SHUFREP","shufle_off_pressed",29,45,74,60)
-
-        self.getImage("SHUFREP","eq_on_released",0,73,21,83)
-        self.getImage("SHUFREP","eq_off_released",0,61,21,72)
-        self.getImage("SHUFREP","eq_on_pressed",46,73,67,84)
-        self.getImage("SHUFREP","eq_off_pressed",46,62,67,72)
-
-        self.getImage("SHUFREP","pl_on_released",23,73,44,83)
-        self.getImage("SHUFREP","pl_off_released",23,61,44,72)
-        self.getImage("SHUFREP","pl_on_pressed",68,73,90,84)
-        self.getImage("SHUFREP","pl_off_pressed",68,62,90,72)
-
-        self.getImage("TITLEBAR","close_released",18,9,26,17)
-        self.getImage("TITLEBAR","close_pressed",18,0,26,8)
-
-        self.getImage("TITLEBAR","minimize_released",9,18,17,26)
-        self.getImage("TITLEBAR","minimize_pressed",0,18,8,26)
-
-        self.getImage("TITLEBAR","reduce_released",9,9,17,17)
-        self.getImage("TITLEBAR","reduce_pressed",9,0,17,8)
-
-        self.getImage("TITLEBAR","menu_released",0,9,8,17)
-        self.getImage("TITLEBAR","menu_pressed",0,0,8,8)
+        self.spectrum_color = self.get_spectrum_colors()
         
-        # playlist
+        self.image_bg = {
+            'image': ImageTk.PhotoImage(self.imgFile['MAIN'].crop((0, 0, 275, 116))),
+            'disabledimage': None
+        }
+        self.image_title_bar = {
+            'image': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((27, 0, 303, 14))),
+            'disabledimage': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((27, 16, 303, 29)))
+        }
+        
+        self.property_close = {
+            'pos_x': 264, 
+            'pos_y': 3,
+            'height': 8,
+            'width': 8,
+            'image_released': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((18,0,26,8))), 
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((18,9,26,17))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_minimize = {
+            'pos_x': 254, 
+            'pos_y': 3,
+            'height': 8,
+            'width': 8,
+            'image_released': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((0,18,8,26))), 
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((9,18,17,26))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_reduce = {
+            'pos_x': 244, 
+            'pos_y': 3,
+            'height': 8,
+            'width': 8,
+            'image_released': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((9,0,17,8))), 
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((9,9,17,17))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_menu = {
+            'pos_x': 6, 
+            'pos_y': 3,
+            'height': 8,
+            'width': 8,
+            'image_released': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((0,0,8,8))), 
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['TITLEBAR'].crop((0,9,8,17))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+
+        self.property_prev = {
+            'pos_x': 16, 
+            'pos_y': 88,
+            'height': 18,
+            'width': 23,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((0, 18, 23, 36))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((0, 0, 23, 18))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_play = {
+            'pos_x': 39, 
+            'pos_y': 88,
+            'height': 18,
+            'width': 23,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((23, 18, 46, 36))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((23, 0, 46, 18))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_pause = {
+            'pos_x': 62, 
+            'pos_y': 88,
+            'height': 18,
+            'width': 23,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((46,18,69,36))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((46,0,69,18))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_stop = {
+            'pos_x': 85, 
+            'pos_y': 88,
+            'height': 18,
+            'width': 23,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((69,18,92,36))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((69,0,92,18))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_next = {
+            'pos_x': 108, 
+            'pos_y': 88,
+            'height': 18,
+            'width': 22,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((92,18,114,36))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((92,0,114,18))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_open = {
+            'pos_x': 135, 
+            'pos_y': 89,
+            'height': 15,
+            'width': 21,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((114,16,135,31))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['CBUTTONS'].crop((114,0,135,15))),
+            'image_released_toggle_true': None,
+            'image_pressed_toggle_true': None
+        }
+        
+        self.property_repeat = {
+            'pos_x': 210, 
+            'pos_y': 89,
+            'height': 15,
+            'width': 27,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,45,27,60))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,0,27,15))),
+            'image_released_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,30,27,45))),
+            'image_pressed_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,15,27,30)))
+        }
+        
+        self.property_shufle = {
+            'pos_x': 165, 
+            'pos_y': 89,
+            'height': 15,
+            'width': 45,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((29,45,74,60))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((29,0,74,15))),
+            'image_released_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((29,30,74,45))),
+            'image_pressed_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((29,15,74,30)))
+        }
+        
+        self.property_eq = {
+            'pos_x': 219, 
+            'pos_y': 58,
+            'height': 10,
+            'width': 21,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((46,62,67,72))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,61,21,72))),
+            'image_released_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((0,73,21,83))),
+            'image_pressed_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((46,73,67,84)))
+        }
+
+        self.property_pl = {
+            'pos_x': 241, 
+            'pos_y': 58,
+            'height': 10,
+            'width': 21,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((68,62,90,72))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((23,61,44,72))),
+            'image_released_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((23,73,44,83))),
+            'image_pressed_toggle_true': ImageTk.PhotoImage(self.imgFile['SHUFREP'].crop((68,73,90,84)))
+        }
+
+        self.property_pos_bar = {
+            'pos_x': 15, 
+            'pos_y': 72,
+            'b_height': 10,
+            'b_width': 29,
+            's_height': 10,
+            's_width': 248,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['POSBAR'].crop((278,0,307,10))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['POSBAR'].crop((248,0,277,10))),
+            'image_bg': [ImageTk.PhotoImage(self.imgFile['POSBAR'].crop((0,0,248,10)))]
+        }
+        
+        self.property_vol_bar = {
+            'pos_x': 108, 
+            'pos_y': 58,
+            'b_height': 10,
+            'b_width': 14,
+            's_height': 13,
+            's_width': 67,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['VOLUME'].crop((0, 422,52,432))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['VOLUME'].crop((15, 422,82,432))),
+            'image_bg': [ImageTk.PhotoImage(self.imgFile['VOLUME'].crop((0,i*15,67,i*15 + 13))) for i in range(1, 28)]
+        }
+        
+        self.property_balance_bar = {
+            'pos_x': 178, 
+            'pos_y': 58,
+            'b_height': 10,
+            'b_width': 13,
+            's_height': 13,
+            's_width': 37,
+            'image_pressed': ImageTk.PhotoImage(self.imgFile['BALANCE'].crop((0, 422,13,432))), 
+            'image_released': ImageTk.PhotoImage(self.imgFile['BALANCE'].crop((15, 422,28,432))),
+            'image_bg': [ImageTk.PhotoImage(self.imgFile['BALANCE'].crop((9,i*15,46,i*15 + 13))) for i in range(1, 28)]
+        }
+        
+    def get_skins(self):
+        paths = glob.glob(SKINS_DIR)
+        
+        self.skins = {path.split('/')[-1]:path for path in paths}
+        
+    def refresh_skin(self):
+        self.load_skin_files()
+        
+        self.w.itemconfig(self.bg,image=self.image_bg['image'])
+        self.w.itemconfig(self.titlebar,image=self.image_title_bar['image'], disabledimage=self.image_title_bar['disabledimage'])
+        self.close.refresh(self.property_close)
+        self.minimize.refresh(self.property_minimize)
+        self.reduce.refresh(self.property_reduce)
+        self.menu.refresh(self.property_menu)
+        
+        self.spectrum.refresh(self.spectrum_color)
+        
+        self.prev.refresh(self.property_prev)
+        self.play.refresh(self.property_play)
+        self.pause.refresh(self.property_pause)
+        self.next.refresh(self.property_next)
+        self.stop.refresh(self.property_stop)
+        self.open.refresh(self.property_open)
+        self.repeat.refresh(self.property_repeat)
+        self.shufle.refresh(self.property_shufle)
+        self.eq.refresh(self.property_eq)
+        self.pl.refresh(self.property_pl)
+        
+        self.pos_bar.refresh(self.property_pos_bar)
+        self.vol_bar.refresh(self.property_vol_bar)
+        self.balance_bar.refresh(self.property_balance_bar)
         
     def start_move(self, event):
+        self.menu_items.unpost()
         self.x = event.x
         self.y = event.y
 

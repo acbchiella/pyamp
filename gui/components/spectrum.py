@@ -45,8 +45,14 @@ class Spectrum():
             color = self.colors[-1] if self.colors else 'white'
             self.bars[f'top_bar_{i}'] = self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, width=0)
     
+    def refresh(self, colors):
+        self.colors = colors
+        for i in range(0, 19):
+            color = self.colors[-1] if self.colors else 'white'
+            self.canvas.itemconfig(self.bars[f'top_bar_{i}'], fill=color)
+            self.bars[f'bar_{i}'].refresh(self.colors)
+            
     def update_bars_async(self):
- 
         prior_values = self.values
         while True:
             for i in range(0, 19):
@@ -116,6 +122,12 @@ class Bar():
         if hide_blocks:
             for i in range(1, hide_blocks):
                 self.canvas.itemconfigure(self.blocks[f'block_{self.max_blocks-i}'], state='hidden')
+    
+    def refresh(self, colors):
+        self.colors = colors
+        for i in range(1, self.max_blocks):
+            color = self.colors[self.max_blocks-i] if self.colors else 'white'
+            self.canvas.itemconfigure(self.blocks[f'block_{i}'], fill=color)
     
     def get_y(self):
         try:
