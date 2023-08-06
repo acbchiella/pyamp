@@ -4,6 +4,7 @@ import glob
 from gui.components.button import WButton
 from gui.components.slider import WSlider
 from gui.components.spectrum import Spectrum
+from gui.components.label import Label
 from player.player_interface import MusicPlayer
 from tkinter import filedialog as fd
 from typing import Optional
@@ -97,7 +98,15 @@ class MainApp(tk.Tk):
         self.pos_bar = WSlider(self, slider_properties=self.property_pos_bar, command=lambda : print('teste'))
         self.vol_bar = WSlider(self, slider_properties=self.property_vol_bar, command=lambda : print('teste'))
         self.balance_bar = WSlider(self, slider_properties=self.property_balance_bar, command=lambda : print('teste'))
-          
+        
+        # elapsed time
+        self.elapsed_time_seconds = Label(canvas=self.w, coord=(78, 26, 98, 38), font=self.font_numbers, text='13', shift=3)
+        self.elapsed_time_minutes = Label(canvas=self.w, coord=(48, 26, 68, 38), font=self.font_numbers, text='48', shift=3)
+        
+        self.info_text = Label(canvas=self.w, coord=(109, 27, 264, 39), font=self.font_text, text='Antonio Chiella')
+        self.info_kbps = Label(canvas=self.w, coord=(109, 43, 124, 50), font=self.font_text, text='192')
+        self.info_khz = Label(canvas=self.w, coord=(155, 43, 165, 50), font=self.font_text, text='44')
+        
     def on_close(self):
         self.destroy()
     
@@ -329,6 +338,56 @@ class MainApp(tk.Tk):
             'image_bg': [ImageTk.PhotoImage(self.imgFile['BALANCE'].crop((9,i*15,46,i*15 + 13))) for i in range(1, 28)]
         }
         
+        # fonts
+        self.font_numbers = {
+            str(i):ImageTk.PhotoImage(self.imgFile['NUMBERS'].crop((9*i, 0, 9*i + 9, 13)))
+            for i in range(10)
+        }
+        
+        self.font_text = self.get_text_font()
+        
+    
+    def get_text_font(self):
+        charTable = {
+            '"': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((130, 0, 135, 6))),
+            '@': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((136, 0, 141, 6))),
+            '…': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((50, 6, 55, 12))),
+            '.': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((55, 6, 60, 12))),
+            ':': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((60, 6, 65, 12))),
+            '(': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((65, 6, 70, 12))),
+            ')': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((70, 6, 75, 12))),
+            '-': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((75, 6, 80, 12))),
+            '\'':ImageTk.PhotoImage(self.imgFile['TEXT'].crop((80, 6, 85, 12))),
+            '!': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((85, 6, 90, 12))),
+            '_': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((90, 6, 95, 12))),
+            '+': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((95, 6, 100, 12))),
+            '\\':ImageTk.PhotoImage(self.imgFile['TEXT'].crop((100, 6, 105, 12))),
+            '/': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((105, 6, 110, 12))),
+            '[': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((110, 6, 115, 12))),
+            ']': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((115, 6, 120, 12))),
+            '^': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((120, 6, 125, 12))),
+            '&': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((125, 6, 130, 12))),
+            '%': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((130, 6, 135, 12))),
+            ',': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((135, 6, 140, 12))),
+            '=': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((140, 6, 145, 12))),
+            '$': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((145, 6, 150, 12))),
+            'â': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((0, 12, 5, 18))),
+            'Â': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((0, 12, 5, 18))),
+            'ö': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((5, 12, 10, 18))),
+            'Ö': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((5, 12, 10, 18))),
+            'ä': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((10, 12, 15, 18))),
+            'Ä': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((10, 12, 15, 18))),
+            '?': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((15, 12, 20, 18))),
+            '*': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((20, 12, 25, 18))),
+            ' ': ImageTk.PhotoImage(self.imgFile['TEXT'].crop((25, 12, 30, 18)))
+        }
+        for i in range(65, 91): # upper case A-Z
+            charTable[chr(i)] = ImageTk.PhotoImage(self.imgFile['TEXT'].crop(((i-65)*5, 0, (i-65)*5 + 4, 6)))
+        for i in range(10): # numbers
+            charTable[str(i)] = ImageTk.PhotoImage(self.imgFile['TEXT'].crop((i*5, 6, i*5 + 5, 12)))
+        
+        return charTable
+    
     def get_skins(self):
         paths = glob.glob(SKINS_DIR)
         
@@ -360,6 +419,13 @@ class MainApp(tk.Tk):
         self.pos_bar.refresh(self.property_pos_bar)
         self.vol_bar.refresh(self.property_vol_bar)
         self.balance_bar.refresh(self.property_balance_bar)
+        
+        self.elapsed_time_seconds.refresh(self.font_numbers)
+        self.elapsed_time_minutes.refresh(self.font_numbers)
+        
+        self.info_text.refresh(self.font_text)
+        self.info_kbps.refresh(self.font_text)
+        self.info_khz.refresh(self.font_text)
         
     def start_move(self, event):
         self.menu_items.unpost()
