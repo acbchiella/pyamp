@@ -8,6 +8,8 @@ from gui.components.label import Label
 from player.player_interface import MusicPlayer
 from tkinter import filedialog as fd
 from typing import Optional
+import threading
+import time
 
 SKINS_DIR = './skins/*'
 
@@ -43,6 +45,9 @@ class MainApp(tk.Tk):
         self.get_skins()
         self.load_skin_files()
         self.build_main_window()
+        
+        self.spectrum_values_update = threading.Thread(daemon=True, target=self.async_spectrum)
+        self.spectrum_values_update.start()
     
     def set_skin(self, skin):
         self.Skinself = skin
@@ -103,7 +108,7 @@ class MainApp(tk.Tk):
         self.elapsed_time_seconds = Label(canvas=self.w, coord=(78, 26, 98, 38), font=self.font_numbers, text='13', shift=3)
         self.elapsed_time_minutes = Label(canvas=self.w, coord=(48, 26, 68, 38), font=self.font_numbers, text='48', shift=3)
         
-        self.info_text = Label(canvas=self.w, coord=(109, 27, 264, 39), font=self.font_text, text='Antonio Chiella')
+        self.info_text = Label(canvas=self.w, coord=(109, 27, 264, 39), font=self.font_text, text='acbchiella')
         self.info_kbps = Label(canvas=self.w, coord=(109, 43, 124, 50), font=self.font_text, text='192')
         self.info_khz = Label(canvas=self.w, coord=(155, 43, 165, 50), font=self.font_text, text='44')
         
@@ -122,8 +127,10 @@ class MainApp(tk.Tk):
         return colors_rgb
     
     def async_spectrum(self):
+        import random
         while True:
-            self.spectrum.values = self.player.data
+            self.spectrum.values = random.sample(range(0, 20), 19) #self.player.data
+            time.sleep(0.1)
 
     def load_skin_files(self):
         

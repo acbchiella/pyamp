@@ -33,13 +33,19 @@ class Label():
         self.width = x1 - x0
         first_font_element = list(self.font.items())[0][1]
         font_width = first_font_element.width()
-        # self.canvas.create_image(font_width + x0, 0 + y0, image=self.font[self.text[0]], anchor="nw")
-        max_label_chars = self.width // font_width
-        print(max_label_chars)
+        self.max_label_chars = self.width // font_width
+        self.display = {}
+        # for i in range(self.max_label_chars):
+        #     self.display[i] = self.canvas.create_image((font_width + self.shift)*i + x0, y0, image=first_font_element, anchor="nw")
+        
         for i in range(len(self.text)):
-            if i > max_label_chars - 1:
+            if i > self.max_label_chars - 1:
                 break
             self.canvas.create_image((font_width + self.shift)*i + x0, y0, image=self.font[self.text[i]], anchor="nw")
+    
+    # def update_text(self):
+    #     text_label = []
+        
     
     def refresh(self, font):
         self.font = font
